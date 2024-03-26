@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Food Meta-analysis</title>
+    
+    <!-- Leaflet CSS & JS -->
+    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js" integrity="sha256-WBkoXOwTeyKclOHuWtc+i2uENFpDZ9YPdf5Hf+D7ewM=" crossorigin=""></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" integrity="sha256-kLaT2GOSpHechhsozzB+flnD+zUyjE2LlfWPgU04xyI=" crossorigin="" />
+    <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css"/>
+    <link rel="stylesheet" href="leaflet.zoomhome.css"/>
+    <script src="leaflet.zoomhome.min.js"></script>
+    <script src="./data/world_borders_v2.js"></script>
+    <script src="./data/cities.js"></script>
+
+<!-- Include MarkerCluster CSS and JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css" />
+    <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
+
+
+    <style type="text/css">
+        #map {
+            width: 80%;
+            height: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+    
+        .info {
+        padding: 6px 8px;
+        font: 14px/16px Arial, Helvetica, sans-serif;
+        background: white;
+        background: rgba(255,255,255,0.8);
+        box-shadow: 0 0 15px rgba(0,0,0,0.2);
+        border-radius: 5px;
+        }
+        .info h4 {
+        margin: 0 0 5px;
+        color: #777;
+}
+
+
+        </style>
+</head>
+<body>
+    <div id="map"></div>
+</body>
+</html>
+
+<script>
+// Map Initialization
+var map = L.map('map',
+{
+    zoomControl: false,
+    minZoom: 2.1,
+    maxZoom: 20,
+});
+
+map.setView([30, 0], 2.1);
+
+// Add OSM baselayer + Carto DB Map
+
+var CartoDB_Positron = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+subdomains: 'abcd',
+maxZoom: 20
+});
+
+CartoDB_Positron.addTo(map);
+
+// Zoom Bar + Home Button (from plugin)
+var zoomHome = L.Control.zoomHome();
+zoomHome.addTo(map);
+
+// Add Cities Dataset
+
+  // Create a MarkerClusterGroup
+  var markerCluster = L.markerClusterGroup({
+    showCoverageOnHover: false  // Do not show individual markers on hover over the cluster
+  });
+
+    var greenIcon = new L.Icon({
+    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png',
+    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowSize: [41, 41]
+    });
+
+    var blueIcon = new L.Icon({
+    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png',
+    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowSize: [41, 41]
+    });
+
+  // Use the loaded GeoJSON data to create a GeoJSON layer
+  var citiesLayer = L.geoJSON(cities, {
+    pointToLayer: function(feature, latlng) {
+      var icon = feature.properties.outcomeconsumption ? greenIcon : blueIcon;
+      var marker = L.marker(latlng, {
+        icon: icon,
+        opacity: 1 // Set the opacity value between 0 (transparent) and 1 (opaque)
+      });
+
+      // Bind a tooltip to the marker showing both "article" and rounded "zi" fields
+      marker.bindTooltip(
+        feature.properties.article + "<br>Fishers's Z: " + Number(feature.properties.zi).toFixed(2),
+        { permanent: false, opacity: 0.7 }
+      );
+
+      // You can also bind a popup if you prefer
+      // marker.bindPopup("Article: " + feature.properties.article + "<br>ZIP Code: " + Number(feature.properties.zi).toFixed(2));
+
+      return marker;
+    }
+  });
+
+  // Add the GeoJSON layer directly to the MarkerClusterGroup
+  markerCluster.addLayer(citiesLayer);
+
+  // Add the MarkerClusterGroup to the map
+  map.addLayer(markerCluster);
+
+//JSON Base Style
+function getColor(STUDIES) {
+    return STUDIES > 10  ? '#BD0026' :
+    STUDIES > 6  ? '#E31A1C' :
+    STUDIES > 4  ? '#FC4E2A' :
+    STUDIES > 2   ? '#FD8D3C' :
+    STUDIES > 1   ? '#FEB24C' :
+    STUDIES > 0   ? '#FED976' :
+                      '#E3E3E3';
+}
+
+function style(feature) {
+    return {
+        fillColor: getColor(feature.properties.STUDIES),
+        weight: 1,
+        opacity: 0.7,
+        color: 'white',
+        fillOpacity: 0.7
+    };
+}
+
+// Add GeoJson Data
+var geoJson;
+
+function highlightFeature(e) {
+var layer = e.target;
+
+var existingColor = layer.options.fillColor || layer.options.color;
+
+layer.setStyle({
+    weight: 1,
+    color: existingColor,
+    dashArray: '',
+    fillOpacity: 0.7
+});
+
+layer.bringToFront();
+info.update(layer.feature.properties);
+}
+
+function resetHighlight(e) {
+geojson.resetStyle(e.target);
+info.update();
+}
+
+function zoomToFeature(e) {
+map.fitBounds(e.target.getBounds());
+}
+
+function onEachFeature(feature, layer) {
+layer.on({
+    mouseover: highlightFeature,
+    mouseout: resetHighlight,
+    click: zoomToFeature
+});
+}
+
+geojson = L.geoJson(geojsonFeature, {
+style: style,
+onEachFeature: onEachFeature
+}).addTo(map);
+
+
+// Add Legend Controls
+var info = L.control();
+
+info.onAdd = function (map) {
+this._div = L.DomUtil.create('div', 'info'); // create a div with a class "info"
+this.update();
+return this._div;
+};
+
+// method that we will use to update the control based on feature properties passed
+info.update = function (props) {
+this._div.innerHTML = '<h4>Number of Studies</h4>' +  (props ?
+    '<b>' + props.NAME + '</b><br />' + 'Overall: ' + props.STUDIES + '</b><br />' + 'Food Consumption: ' + props.CON + '</b><br />' + 'Food Waste: ' + props.FWL
+    : 'Click on a country or marker');
+};
+
+info.addTo(map);
+
+    
+</script>
