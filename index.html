@@ -12,8 +12,8 @@
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css"/>
     <link rel="stylesheet" href="leaflet.zoomhome.css"/>
     <script src="leaflet.zoomhome.min.js"></script>
-    <script src="./data/world_borders_v2.js"></script>
-    <script src="./data/cities.js"></script>
+    <script src="data/world_borders_v2.js"></script>
+    <script src="data/cities.js"></script>
 
 <!-- Include MarkerCluster CSS and JS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
@@ -55,7 +55,7 @@
 var map = L.map('map',
 {
     zoomControl: false,
-    minZoom: 2.1,
+    minZoom: 2,
     maxZoom: 20,
 });
 
@@ -79,7 +79,8 @@ zoomHome.addTo(map);
 
   // Create a MarkerClusterGroup
   var markerCluster = L.markerClusterGroup({
-    showCoverageOnHover: false  // Do not show individual markers on hover over the cluster
+    showCoverageOnHover: false,  // Do not show individual markers on hover over the cluster
+    singleMarkerMode: true
   });
 
     var greenIcon = new L.Icon({
@@ -109,14 +110,14 @@ zoomHome.addTo(map);
         opacity: 1 // Set the opacity value between 0 (transparent) and 1 (opaque)
       });
 
-      // Bind a tooltip to the marker showing both "article" and rounded "zi" fields
+      // Bind a tooltip to the marker showing both "article" and rounded "cohens_d" fields
       marker.bindTooltip(
-        feature.properties.article + "<br>Fishers's Z: " + Number(feature.properties.zi).toFixed(2),
-        { permanent: false, opacity: 0.7 }
+        feature.properties.article + "<br>Interventions: " + String(feature.properties.intd) + "<br>Cohens's <i>d</i> : " + String(feature.properties.cohens_d),
+        { permanent: false, opacity: 0.9 }
       );
 
       // You can also bind a popup if you prefer
-      // marker.bindPopup("Article: " + feature.properties.article + "<br>ZIP Code: " + Number(feature.properties.zi).toFixed(2));
+      // marker.bindPopup("Article: " + feature.properties.article + "<br>ZIP Code: " + Number(feature.properties.cohens_d).toFixed(2));
 
       return marker;
     }
